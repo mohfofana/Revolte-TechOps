@@ -1,0 +1,82 @@
+{
+  "hash": "72e8555c",
+  "configHash": "069effcc",
+  "lockfileHash": "f403a668",
+  "browserHash": "8ba9c8ca",
+  "optimized": {
+    "@mui/icons-material": {
+      "src": "../../node_modules/@mui/icons-material/esm/index.js",
+      "file": "@mui_icons-material.js",
+      "fileHash": "ea30fd98",
+      "needsInterop": false
+    },
+    "@mui/icons-material/Brightness4": {
+      "src": "../../node_modules/@mui/icons-material/esm/Brightness4.js",
+      "file": "@mui_icons-material_Brightness4.js",
+      "fileHash": "7dbbb157",
+      "needsInterop": false
+    },
+    "@mui/icons-material/Brightness7": {
+      "src": "../../node_modules/@mui/icons-material/esm/Brightness7.js",
+      "file": "@mui_icons-material_Brightness7.js",
+      "fileHash": "e6b0a173",
+      "needsInterop": false
+    },
+    "@mui/material": {
+      "src": "../../node_modules/@mui/material/esm/index.js",
+      "file": "@mui_material.js",
+      "fileHash": "590f7ef8",
+      "needsInterop": false
+    },
+    "@mui/material/styles": {
+      "src": "../../node_modules/@mui/material/esm/styles/index.js",
+      "file": "@mui_material_styles.js",
+      "fileHash": "b989d39e",
+      "needsInterop": false
+    },
+    "react": {
+      "src": "../../node_modules/react/index.js",
+      "file": "react.js",
+      "fileHash": "34b46890",
+      "needsInterop": true
+    },
+    "react-dom/client": {
+      "src": "../../node_modules/react-dom/client.js",
+      "file": "react-dom_client.js",
+      "fileHash": "0580440b",
+      "needsInterop": true
+    },
+    "react-router-dom": {
+      "src": "../../node_modules/react-router-dom/dist/index.mjs",
+      "file": "react-router-dom.js",
+      "fileHash": "a7f030f8",
+      "needsInterop": false
+    }
+  },
+  "chunks": {
+    "chunk-JPFIJ2ZJ": {
+      "file": "chunk-JPFIJ2ZJ.js"
+    },
+    "chunk-TPM5KX7F": {
+      "file": "chunk-TPM5KX7F.js"
+    },
+    "chunk-K5WQ4OHX": {
+      "file": "chunk-K5WQ4OHX.js"
+    },
+    "chunk-JDNYNFXV": {
+      "file": "chunk-JDNYNFXV.js"
+    },
+    "chunk-C6WWHQR7": {
+      "file": "chunk-C6WWHQR7.js"
+    },
+    "chunk-4FQBKQJG": {
+      "file": "chunk-4FQBKQJG.js"
+    },
+    "chunk-LSAAHJUB": {
+      "file": "chunk-LSAAHJUB.js"
+    },
+    "chunk-3A6WRQ5K": {
+      "file": "chunk-3A6WRQ5K.js"
+    }
+  }
+}
