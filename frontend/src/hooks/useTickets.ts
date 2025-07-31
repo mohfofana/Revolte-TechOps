@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
-import { fetchTickets, fetchTicketById, createTicket, updateTicket, type Ticket } from '../services/api';
+import { fetchTickets, fetchTicketById, createTicket, updateTicket } from '../services/api';
+import type { Ticket } from '../types/ticket';
 
 export const useTickets = (initialFilters = {}) => {
   const [tickets, setTickets] = useState<Ticket[]>([]);
@@ -47,7 +48,7 @@ export const useTickets = (initialFilters = {}) => {
     }
   }, [loadTickets]);
 
-  const updateTicketStatus = useCallback(async (id: number, status: 'open' | 'in_progress' | 'resolved' | 'closed') => {
+  const updateTicketStatus = useCallback(async (id: number, status: 'open' | 'pending' | 'closed') => {
     try {
       setLoading(true);
       const updated = await updateTicket(id, { status });

@@ -21,8 +21,6 @@ export interface Attachment {
   uploadedAt: string;
 }
 
-// Le type Stats est maintenant importé depuis '../types/stats'
-
 // Tickets
 export const fetchTickets = async (filters: TicketFilters = {}): Promise<Ticket[]> => {
   // Convertir l'objet de filtres en paramètres d'URL valides

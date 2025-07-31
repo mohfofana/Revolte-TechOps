@@ -99,6 +99,6 @@ export const useAttachments = (ticketId: number) => {
     uploadAttachment: handleUpload,
     downloadAttachment,
     deleteAttachment,
-    setAttachments // Permet de définir les pièces jointes depuis l'extérieur (ex: depuis les données du ticket)
+    setAttachments
   };
 };

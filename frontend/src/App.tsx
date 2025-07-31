@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { ThemeProvider, CssBaseline, Toolbar } from '@mui/material';
 import { getDesignTokens } from './theme';
 import { createTheme } from '@mui/material/styles';
