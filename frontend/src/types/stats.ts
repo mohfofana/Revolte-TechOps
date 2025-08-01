@@ -1,7 +1,7 @@
 export interface Stats {
   openTickets: number;
   inProgressTickets: number;
-  pendingTickets?: number; // Pour la rétrocompatibilité
+  pendingTickets?: number; 
   closedTickets: number;
-  totalTickets?: number;   // Peut être calculé côté frontend si nécessaire
+  totalTickets?: number;   
 }
