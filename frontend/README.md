@@ -37,80 +37,57 @@ Ce dépôt contient uniquement le frontend de l'application Revolte-TechOps. Le 
 
 ```bash
 git clone https://github.com/mohfofana/Revolte-TechOps.git
-cd Revolte-TechOps/frontend
+cd Revolte-TechOps
 ```
 
-### 2. Installer les dépendances
+### 2. Installer le frontend
 
 ```bash
+# Se déplacer dans le dossier frontend
+cd frontend
+
+# Installer les dépendances
+npm install
+
+# Revenir au dossier parent
+cd ..
+
+# Supprimer le dossier backend vide (s'il existe)
+rm -r -force backend
+
+# Cloner le dépôt backend
+git clone https://github.com/mohfofana/backend_revolt.git
+
+# Votre structure de dossiers devrait maintenant être :
+# Revolte-TechOps/
+#   ├── frontend/    # Dossier du frontend
+#   └── backend_revolt/  # Dossier du backend
+
+# Suivez les instructions d'installation du backend
+cd backend_revolt
 npm install
 ```
 
-### 3. Configuration de l'environnement
+### 4. Démarrer les serveurs
 
-Créez un fichier `.env` à la racine du dossier frontend :
-
-```env
-VITE_API_URL=http://localhost:3001/api
+#### Dans un premier terminal (backend) :
+```bash
+cd backend_revolt
+npm run start:dev
 ```
 
-### 4. Démarrer le serveur de développement
-
+#### Dans un deuxième terminal (frontend) :
 ```bash
+cd frontend
 npm run dev
 ```
 
-### 5. Accéder à l'application
+### 5. Accéder aux applications
 
-Ouvrez votre navigateur à l'adresse : http://localhost:5173
+- **Frontend** : http://localhost:5173
+- **Documentation API (Swagger)** : http://localhost:3001/api/docs
 
-## 🔌 Configuration du Backend
 
-Pour faire fonctionner l'application complète, vous devez également configurer le backend :
-
-1. Suivez les instructions du dépôt backend : [https://github.com/mohfofana/backend_revolt](https://github.com/mohfofana/backend_revolt)
-2. Assurez-vous que le serveur backend tourne sur http://localhost:3001
-
-### 2. Configuration du Backend
-
-```bash
-# Se déplacer dans le dossier backend
-cd ../backend
-
-# Installer les dépendances
-npm install
-
-# Créer un fichier .env à la racine du backend avec les variables suivantes :
-cp .env.example .env
-
-# Puis éditez le fichier .env avec vos paramètres
-```
-
-### 3. Configuration de la Base de Données
-
-1. Créez une base de données PostgreSQL
-2. Mettez à jour les informations de connexion dans le fichier `.env` du backend
-3. Exécutez les migrations :
-
-```bash
-# Dans le dossier backend
-npm run typeorm migration:run
-```
-
-### 4. Configuration du Frontend
-
-```bash
-# Retourner dans le dossier frontend
-cd ../frontend
-
-# Installer les dépendances
-npm install
-
-# Créer un fichier .env à la racine du frontend
-cp .env.example .env
-
-# Mettre à jour les variables d'environnement si nécessaire
-```
 
 ## 🚀 Lancement de l'Application
 
@@ -123,21 +100,6 @@ npm run dev
 # Dans un autre terminal, démarrer le serveur backend (port 3001 par défaut)
 cd ../backend
 npm run start:dev
-```
-
-### Production
-
-```bash
-# Construire l'application frontend
-npm run build
-
-# Démarrer le serveur de production frontend
-npm run preview
-
-# Pour le backend
-cd ../backend
-npm run build
-npm run start:prod
 ```
 
 ## 📂 Structure du Projet
@@ -195,7 +157,7 @@ Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de 
 
 ## 📧 Contact
 
-Pour toute question ou suggestion, n'hésitez pas à me contacter à [votre@email.com](mailto:votre@email.com).
+Pour toute question ou suggestion, n'hésitez pas à me contacter à [mohamedaboubakar.fofana@gmail.com](mailto:mohamedaboubakar.fofana@gmail.com).
   {
     files: ['**/*.{ts,tsx}'],
     extends: [
