@@ -52,8 +52,6 @@ npm install
 # Revenir au dossier parent
 cd ..
 
-# Supprimer le dossier backend vide (s'il existe)
-rm -r -force backend
 
 # Cloner le dépôt backend
 git clone https://github.com/mohfofana/backend_revolt.git
