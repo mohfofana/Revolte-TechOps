@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useSearchParams, useNavigate, useParams, Outlet } from 'react-router-dom';
 import { 
   Container, 
@@ -35,10 +35,11 @@ import {
   Warning,
   Refresh,
   Close,
-
 } from '@mui/icons-material';
-import { fetchTickets } from '../services/api';
-import type { Ticket, TicketFilters } from '../types/ticket';
+
+// Import des hooks personnalisés
+import { useTickets } from '../hooks/useTickets';
+import type { TicketFilters } from '../types/ticket';
 import { HeaderCard, ActivityCard } from '../components/dashboard';
 
 const statusMap: Record<string, { label: string; color: 'success' | 'warning' | 'error' | 'info' }> = {
@@ -59,9 +60,6 @@ interface TicketsListProps {
 }
 
 const TicketsList: React.FC<TicketsListProps> = ({ onTicketSelect }) => {
-  const [tickets, setTickets] = useState<Ticket[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -72,27 +70,13 @@ const TicketsList: React.FC<TicketsListProps> = ({ onTicketSelect }) => {
     ? statusParam 
     : undefined;
 
-  const loadTickets = async () => {
-    try {
-      setLoading(true);
-      const filters: TicketFilters = {};
-      if (status) {
-        filters.status = status;
-      }
-      const data = await fetchTickets(filters);
-      setTickets(data);
-      setError(null);
-    } catch (err) {
-      console.error('Erreur lors du chargement des tickets:', err);
-      setError('Impossible de charger les tickets. Veuillez réessayer plus tard.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  useEffect(() => {
-    loadTickets();
-  }, [status]);
+  // Utilisation du hook personnalisé
+  const { 
+    tickets, 
+    loading, 
+    error, 
+    refreshTickets 
+  } = useTickets({ status });
 
   const getStatusInfo = (status: string) => {
     return statusMap[status] || { label: status, color: 'default' };
@@ -108,10 +92,6 @@ const TicketsList: React.FC<TicketsListProps> = ({ onTicketSelect }) => {
     } else {
       navigate(`/tickets/${ticketId}`);
     }
-  };
-
-  const handleRefresh = () => {
-    loadTickets();
   };
 
   const filteredTickets = tickets.filter(ticket =>
@@ -151,12 +131,12 @@ const TicketsList: React.FC<TicketsListProps> = ({ onTicketSelect }) => {
           <Box textAlign="center" py={8}>
             <Warning sx={{ fontSize: 64, color: 'error.main', mb: 2 }} />
             <Typography color="error" variant="h6" gutterBottom>
-              {error}
+              {error.message || 'Erreur lors du chargement des tickets'}
             </Typography>
             <Button 
               variant="contained" 
               startIcon={<Refresh />} 
-              onClick={handleRefresh}
+              onClick={refreshTickets}
               sx={{ mt: 2, borderRadius: 2 }}
             >
               Réessayer
@@ -355,7 +335,7 @@ const TicketsList: React.FC<TicketsListProps> = ({ onTicketSelect }) => {
               </Tooltip>
               <Tooltip title="Actualiser">
                 <IconButton 
-                  onClick={handleRefresh}
+                  onClick={refreshTickets}
                   sx={{ 
                     bgcolor: alpha(theme.palette.success.main, 0.08),
                     '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.12) }
@@ -643,7 +623,6 @@ const TicketsPage = () => {
   return (
     <Box sx={{ width: '100vw', minHeight: '100vh', bgcolor: 'background.default', overflowX: 'hidden' }}>
       <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3, md: 4 } }}>
-
         {/* Contenu principal */}
         <Box sx={{ minHeight: '60vh' }}>
           {!id ? (

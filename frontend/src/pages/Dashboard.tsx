@@ -36,8 +36,7 @@ const Dashboard = () => {
     navigate('/new-ticket');
   };
 
-  const handleStatCardClick = (status: string) => {
-    // Naviguer vers la liste des tickets avec le filtre de statut
+  const handleStatCardClick = (status: string) => { 
     navigate(`/tickets?status=${status}`);
   };
 

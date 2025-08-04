@@ -38,10 +38,9 @@ import {
 
 // Import des composants personnalisés et services
 import { HeaderCard, ActivityCard } from '../components/dashboard';
+import { useTickets } from '../hooks/useTickets';
 import { 
-  fetchTicketById, 
   addComment, 
-  updateTicketStatus, 
   deleteTicket,
   updateTicket 
 } from '../services/api';
@@ -52,7 +51,14 @@ const TicketDetails = () => {
   const { id } = useParams<{ id: string }>();
   const theme = useTheme();
   
-  // TOUS les états déclarés au début du composant
+  // Utilisation du hook personnalisé
+  const { 
+    getTicket, 
+    updateTicketStatus: updateStatus, 
+    loading: ticketsLoading 
+  } = useTickets();
+  
+  // États locaux pour la page de détails
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -86,11 +92,11 @@ const TicketDetails = () => {
     return priorities.find(p => p.value === priority) || priorities[1];
   };
   
-  // Fonction utilitaire pour charger un ticket
+  // Fonction utilitaire pour charger un ticket via le hook
   const loadTicket = async (ticketId: string) => {
     try {
       setLoading(true);
-      const ticketData = await fetchTicketById(ticketId);
+      const ticketData = await getTicket(ticketId);
       setTicket(ticketData);
       setError(null);
     } catch (err) {
@@ -147,12 +153,13 @@ const TicketDetails = () => {
     }
   };
   
+  // Utilisation du hook pour changer le statut
   const handleStatusChange = async (newStatus: 'open' | 'pending' | 'closed') => {
     if (!ticket) return;
     
     try {
       setLoading(true);
-      const updatedTicket = await updateTicketStatus(ticket.id, newStatus);
+      const updatedTicket = await updateStatus(ticket.id, newStatus);
       setTicket(updatedTicket);
       // Mettre à jour aussi l'état d'édition si on est en mode édition
       if (isEditing) {
@@ -207,11 +214,10 @@ const TicketDetails = () => {
     
     setCommentLoading(true);
     try {
-      await addComment(Number(id), newComment, 'Utilisateur actuel'); // À adapter selon votre système d'auth
+      await addComment(Number(id), newComment, 'Utilisateur actuel');
       setNewComment('');
       // Recharger le ticket pour voir le nouveau commentaire
-      const updatedTicket = await fetchTicketById(id);
-      setTicket(updatedTicket);
+      await loadTicket(id);
     } catch (err) {
       console.error('Erreur lors de l\'ajout du commentaire:', err);
     } finally {
@@ -270,8 +276,10 @@ const TicketDetails = () => {
     }
   ];
 
-  // États de chargement et d'erreur
-  if (loading) {
+  // États de chargement et d'erreur (combinaison du loading local et du hook)
+  const isLoading = loading || ticketsLoading;
+
+  if (isLoading) {
     return (
       <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
         <Container maxWidth="xl" sx={{ py: 4, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '80vh' }}>
