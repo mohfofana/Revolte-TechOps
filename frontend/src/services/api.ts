@@ -136,7 +136,7 @@ export const uploadAttachment = async (ticketId: number, file: File): Promise<At
   formData.append('file', file);
   
   const response = await fetch(`${API_BASE_URL}/tickets/${ticketId}/attachments`, {
-    method: 'POST',
+    // method: 'POST',
     body: formData
   });
   
@@ -159,7 +159,7 @@ export const downloadAttachment = async (attachmentId: number): Promise<Blob> =>
 
 export const deleteAttachment = async (attachmentId: number): Promise<void> => {
   const response = await fetch(`${API_BASE_URL}/attachments/${attachmentId}`, {
-    method: 'DELETE'
+    // method: 'DELETE'
   });
   
   if (!response.ok) {

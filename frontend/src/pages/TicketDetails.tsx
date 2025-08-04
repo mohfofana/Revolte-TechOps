@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { 
   Container, 
@@ -36,41 +36,46 @@ import {
   Warning
 } from '@mui/icons-material';
 
-// Import des composants personnalisés et services
+// Import des composants personnalisés et hooks
 import { HeaderCard, ActivityCard } from '../components/dashboard';
 import { useTickets } from '../hooks/useTickets';
-import { 
-  addComment, 
-  deleteTicket,
-  updateTicket 
-} from '../services/api';
+import { useComments } from '../hooks/useComments';
+import { deleteTicket, updateTicket } from '../services/api';
 import type { Ticket } from '../types/ticket';
+import React from 'react';
 
 const TicketDetails = () => {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const theme = useTheme();
   
-  // Utilisation du hook personnalisé
+  // Hooks pour les données
   const { 
     getTicket, 
-    updateTicketStatus: updateStatus, 
+    updateTicketStatus, 
     loading: ticketsLoading 
   } = useTickets();
   
-  // États locaux pour la page de détails
+  const {
+    comments,
+    loading: commentsLoading,
+    error: commentsError,
+    submitComment,
+    // refreshComments
+  } = useComments(id ? Number(id) : 0);
+  
+  // États UI uniquement
   const [ticket, setTicket] = useState<Ticket | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionsMenuAnchor, setActionsMenuAnchor] = useState<null | HTMLElement>(null);
   const [newComment, setNewComment] = useState('');
-  const [commentLoading, setCommentLoading] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editData, setEditData] = useState<Partial<Ticket>>({});
   const [statusMenuAnchor, setStatusMenuAnchor] = useState<null | HTMLElement>(null);
   const [priorityMenuAnchor, setPriorityMenuAnchor] = useState<null | HTMLElement>(null);
   
-  // Configuration des statuts, priorités, etc.
+  // Configuration des statuts et priorités
   const statuses = [
     { value: 'open', label: 'Ouvert', color: theme.palette.info.main },
     { value: 'pending', label: 'En attente', color: theme.palette.warning.main },
@@ -92,36 +97,83 @@ const TicketDetails = () => {
     return priorities.find(p => p.value === priority) || priorities[1];
   };
   
-  // Fonction utilitaire pour charger un ticket via le hook
-  const loadTicket = async (ticketId: string) => {
-    try {
-      setLoading(true);
-      const ticketData = await getTicket(ticketId);
-      setTicket(ticketData);
-      setError(null);
-    } catch (err) {
-      console.error('Erreur lors du chargement du ticket:', err);
-      setError('Impossible de charger le ticket. Veuillez réessayer plus tard.');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  // Chargement initial du ticket
-  useEffect(() => {
-    if (!id) {
-      setError('ID du ticket manquant');
-      setLoading(false);
-      return;
-    }
-    
-    loadTicket(id);
-  }, [id]);
+  // Hook personnalisé pour gérer le ticket courant
+  const useCurrentTicket = () => {
+    const loadTicket = async () => {
+      if (!id) {
+        setError('ID du ticket manquant');
+        setLoading(false);
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        const ticketData = await getTicket(id);
+        setTicket(ticketData);
+        setError(null);
+      } catch (err) {
+        console.error('Erreur lors du chargement du ticket:', err);
+        setError('Impossible de charger le ticket. Veuillez réessayer plus tard.');
+      } finally {
+        setLoading(false);
+      }
+    };
 
-  const handleMenuClick = (event: React.MouseEvent<HTMLElement>) => {
-    setActionsMenuAnchor(event.currentTarget);
+    // Auto-load sur le montage
+    React.useEffect(() => {
+      loadTicket();
+    }, []);
+
+    return { loadTicket };
+  };
+
+  const { loadTicket } = useCurrentTicket();
+
+  // Handlers simplifiés - utilisent uniquement les hooks
+  const handleStatusChange = async (newStatus: 'open' | 'pending' | 'closed') => {
+    if (!ticket) return;
+    
+    try {
+      const updatedTicket = await updateTicketStatus(ticket.id, newStatus);
+      setTicket(updatedTicket);
+      if (isEditing) {
+        setEditData(prev => ({ ...prev, status: newStatus }));
+      }
+    } catch (err) {
+      console.error('Erreur lors du changement de statut:', err);
+      setError('Erreur lors du changement de statut');
+    }
   };
   
+  const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high' | 'critical') => {
+    if (!ticket) return;
+    
+    try {
+      const updatedTicket = await updateTicket(ticket.id, { priority: newPriority });
+      setTicket(updatedTicket);
+      if (isEditing) {
+        setEditData(prev => ({ ...prev, priority: newPriority }));
+      }
+      // Recharger le ticket pour sync complète
+      await loadTicket();
+    } catch (err) {
+      console.error('Erreur lors du changement de priorité:', err);
+      setError('Erreur lors du changement de priorité');
+    }
+  };
+  
+  const handleDeleteTicket = async () => {
+    if (!ticket || !window.confirm('Êtes-vous sûr de vouloir supprimer ce ticket ?')) return;
+    
+    try {
+      await deleteTicket(ticket.id);
+      navigate('/tickets');
+    } catch (err) {
+      console.error('Erreur lors de la suppression du ticket:', err);
+      setError('Erreur lors de la suppression du ticket');
+    }
+  };
+
   const handleEditClick = () => {
     if (ticket) {
       setEditData({
@@ -134,97 +186,41 @@ const TicketDetails = () => {
       });
       setIsEditing(true);
     }
-    handleMenuClose();
+    setActionsMenuAnchor(null);
   };
   
   const handleSaveEdit = async () => {
     if (!ticket) return;
     
     try {
-      setLoading(true);
       const updatedTicket = await updateTicket(ticket.id, editData);
       setTicket(updatedTicket);
       setIsEditing(false);
+      // Recharger pour sync complète
+      await loadTicket();
     } catch (err) {
       console.error('Erreur lors de la mise à jour du ticket:', err);
       setError('Erreur lors de la mise à jour du ticket');
-    } finally {
-      setLoading(false);
     }
-  };
-  
-  // Utilisation du hook pour changer le statut
-  const handleStatusChange = async (newStatus: 'open' | 'pending' | 'closed') => {
-    if (!ticket) return;
-    
-    try {
-      setLoading(true);
-      const updatedTicket = await updateStatus(ticket.id, newStatus);
-      setTicket(updatedTicket);
-      // Mettre à jour aussi l'état d'édition si on est en mode édition
-      if (isEditing) {
-        setEditData(prev => ({ ...prev, status: newStatus } as Partial<Ticket>));
-      }
-    } catch (err) {
-      console.error('Erreur lors du changement de statut:', err);
-      setError('Erreur lors du changement de statut');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handlePriorityChange = async (newPriority: 'low' | 'medium' | 'high' | 'critical') => {
-    if (!ticket) return;
-    
-    try {
-      setLoading(true);
-      const updatedTicket = await updateTicket(ticket.id, { priority: newPriority });
-      setTicket(updatedTicket);
-      if (isEditing) {
-        setEditData(prev => ({ ...prev, priority: newPriority } as Partial<Ticket>));
-      }
-    } catch (err) {
-      console.error('Erreur lors du changement de priorité:', err);
-      setError('Erreur lors du changement de priorité');
-    } finally {
-      setLoading(false);
-    }
-  };
-  
-  const handleDeleteTicket = async () => {
-    if (!ticket || !window.confirm('Êtes-vous sûr de vouloir supprimer ce ticket ?')) return;
-    
-    try {
-      setLoading(true);
-      await deleteTicket(ticket.id);
-      navigate('/tickets');
-    } catch (err) {
-      console.error('Erreur lors de la suppression du ticket:', err);
-      setError('Erreur lors de la suppression du ticket');
-      setLoading(false);
-    }
-  };
-
-  const handleMenuClose = () => {
-    setActionsMenuAnchor(null);
   };
 
   const handleAddComment = async () => {
-    if (!newComment.trim() || !ticket || !id) return;
+    if (!newComment.trim()) return;
     
-    setCommentLoading(true);
     try {
-      await addComment(Number(id), newComment, 'Utilisateur actuel');
+      // Juste soumettre le commentaire, useComments se charge de la mise à jour
+      await submitComment(newComment, 'Utilisateur actuel');
       setNewComment('');
-      // Recharger le ticket pour voir le nouveau commentaire
-      await loadTicket(id);
+      
+      // Pas besoin de recharger le ticket complet ou les commentaires
+      // useComments gère déjà la mise à jour locale des commentaires
+      
     } catch (err) {
       console.error('Erreur lors de l\'ajout du commentaire:', err);
-    } finally {
-      setCommentLoading(false);
     }
   };
 
+  // Fonctions utilitaires (restent dans le composant car spécifiques à l'UI)
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('fr-FR', {
       day: '2-digit',
@@ -245,7 +241,7 @@ const TicketDetails = () => {
     return `Il y a ${Math.floor(diffInHours / 24)} jour(s)`;
   };
 
-  // Gestion des actions rapides
+  // Configuration des actions rapides
   const quickActions = [
     { 
       title: 'Changer le statut', 
@@ -276,9 +272,10 @@ const TicketDetails = () => {
     }
   ];
 
-  // États de chargement et d'erreur (combinaison du loading local et du hook)
+  // États de chargement combinés
   const isLoading = loading || ticketsLoading;
 
+  // Rendu conditionnel pour le chargement
   if (isLoading) {
     return (
       <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -294,6 +291,7 @@ const TicketDetails = () => {
     );
   }
 
+  // Rendu conditionnel pour les erreurs
   if (error || !ticket) {
     return (
       <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
@@ -317,6 +315,7 @@ const TicketDetails = () => {
     );
   }
 
+  // Rendu principal (identique à l'original, mais avec des handlers nettoyés)
   return (
     <Box sx={{ width: '100%', minHeight: '100vh', bgcolor: 'background.default' }}>
       <Container maxWidth="xl" sx={{ py: { xs: 2, sm: 4 }, px: { xs: 2, sm: 3, md: 4 } }}>
@@ -342,16 +341,16 @@ const TicketDetails = () => {
             addButtonIcon={<ArrowBack />}
             onAddClick={() => navigate('/')} 
           />
-          <IconButton onClick={handleMenuClick} size="large">
+          <IconButton onClick={(e) => setActionsMenuAnchor(e.currentTarget)} size="large">
             <MoreVert />
           </IconButton>
         </Box>
 
-        {/* Menu contextuel principal */}
+        {/* Menus */}
         <Menu
           anchorEl={actionsMenuAnchor}
           open={Boolean(actionsMenuAnchor)}
-          onClose={handleMenuClose}
+          onClose={() => setActionsMenuAnchor(null)}
           transformOrigin={{ horizontal: 'right', vertical: 'top' }}
           anchorOrigin={{ horizontal: 'right', vertical: 'bottom' }}
         >
@@ -359,26 +358,26 @@ const TicketDetails = () => {
             <ListItemIcon><Edit fontSize="small" /></ListItemIcon>
             <ListItemText>Modifier</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => setActionsMenuAnchor(null)}>
             <ListItemIcon><BookmarkBorder fontSize="small" /></ListItemIcon>
             <ListItemText>Suivre</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => setActionsMenuAnchor(null)}>
             <ListItemIcon><Share fontSize="small" /></ListItemIcon>
             <ListItemText>Partager</ListItemText>
           </MenuItem>
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => setActionsMenuAnchor(null)}>
             <ListItemIcon><Print fontSize="small" /></ListItemIcon>
             <ListItemText>Imprimer</ListItemText>
           </MenuItem>
           <Divider />
-          <MenuItem onClick={handleMenuClose}>
+          <MenuItem onClick={() => setActionsMenuAnchor(null)}>
             <ListItemIcon><Archive fontSize="small" /></ListItemIcon>
             <ListItemText>Archiver</ListItemText>
           </MenuItem>
           <MenuItem 
             onClick={() => {
-              handleMenuClose();
+              setActionsMenuAnchor(null);
               handleDeleteTicket();
             }} 
             sx={{ color: 'error.main' }}
@@ -388,7 +387,6 @@ const TicketDetails = () => {
           </MenuItem>
         </Menu>
 
-        {/* Menu de changement de statut */}
         <Menu
           anchorEl={statusMenuAnchor}
           open={Boolean(statusMenuAnchor)}
@@ -420,7 +418,6 @@ const TicketDetails = () => {
           ))}
         </Menu>
 
-        {/* Menu de changement de priorité */}
         <Menu
           anchorEl={priorityMenuAnchor}
           open={Boolean(priorityMenuAnchor)}
@@ -492,14 +489,19 @@ const TicketDetails = () => {
               <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                 <Timeline color="primary" />
                 Historique et commentaires
-                <Chip label={ticket.comments?.length || 0} size="small" color="primary" />
+                <Chip label={comments?.length || 0} size="small" color="primary" />
               </Typography>
               <Divider sx={{ mb: 3 }} />
               
-              {/* Liste des commentaires */}
+              {commentsError && (
+                <Typography variant="body2" color="error" sx={{ mb: 2 }}>
+                  Erreur lors du chargement des commentaires
+                </Typography>
+              )}
+              
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {ticket.comments && ticket.comments.length > 0 ? (
-                  ticket.comments.map((comment) => (
+                {comments && comments.length > 0 ? (
+                  comments.map((comment) => (
                     <Box key={comment.id} sx={{ display: 'flex', gap: 2 }}>
                       <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 40, height: 40 }}>
                         {comment.authorName?.substring(0, 2).toUpperCase() || 'U'}
@@ -564,10 +566,10 @@ const TicketDetails = () => {
                         variant="contained"
                         startIcon={<Send />}
                         onClick={handleAddComment}
-                        disabled={commentLoading || !newComment.trim()}
+                        disabled={commentsLoading || !newComment.trim()}
                         sx={{ borderRadius: 2 }}
                       >
-                        {commentLoading ? 'Envoi...' : 'Commenter'}
+                        {commentsLoading ? 'Envoi...' : 'Commenter'}
                       </Button>
                       <Button
                         variant="outlined"
@@ -592,7 +594,6 @@ const TicketDetails = () => {
               iconBackground={getPriorityInfo(ticket.priority).color}
             >
               <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
-                {/* Statut */}
                 <Box>
                   <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                     Statut
@@ -612,7 +613,6 @@ const TicketDetails = () => {
                   </Box>
                 </Box>
 
-                {/* Priorité */}
                 <Box>
                   <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                     Priorité
@@ -625,7 +625,6 @@ const TicketDetails = () => {
                   </Box>
                 </Box>
 
-                {/* Dates */}
                 <Box>
                   <Typography variant="caption" color="text.secondary" gutterBottom display="block">
                     Créé le
